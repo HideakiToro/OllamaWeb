@@ -1,14 +1,14 @@
 import type { OllamaResponse, OllamaPromptResponse } from '~/types/Ollama';
 import chalk from 'chalk';
 
-export async function generatePrompt(image: String, prompt?: String): Promise<string> {
+export async function generatePrompt(image: string, prompt?: string, retries: number = 3): Promise<string> {
     let result: OllamaResponse<OllamaPromptResponse> = await (await fetch('http://localhost:11434/api/chat', {
         method: 'POST',
         headers: {
             'content-type': 'application/json'
         },
         body: JSON.stringify({
-            model: 'unitythemaker/llama3.2-vision-tools',
+            model: process.env.PROMPT_MODEL || 'unitythemaker/llama3.2-vision-tools',
             messages: [
                 {
                     role: 'system',
@@ -23,7 +23,7 @@ export async function generatePrompt(image: String, prompt?: String): Promise<st
                 }
             ],
             stream: false,
-            temperatur: 0.5,
+            temperature: 0.5,
             tools: [
                 {
                     type: 'function',
@@ -49,9 +49,11 @@ export async function generatePrompt(image: String, prompt?: String): Promise<st
     })).json();
 
     if(result == undefined || result.message.tool_calls == undefined || result.message.tool_calls.length <= 0) {
+        if(retries <= 0) {
+            throw new Error('Failed to generate prompt from image');
+        }
         console.log(chalk.yellow('Failed to generate prompt from image. Trying again...'));
-        // throw new Error('Failed to generate prompt from image');
-        return generatePrompt(image, prompt);
+        return generatePrompt(image, prompt, retries - 1);
     }
 
     return result.message.tool_calls[0].function.arguments.description;
