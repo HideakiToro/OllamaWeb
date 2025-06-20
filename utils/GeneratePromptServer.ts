@@ -2,59 +2,47 @@ import type { OllamaResponse, OllamaPromptResponse } from '~/types/Ollama';
 import chalk from 'chalk';
 
 export async function generatePrompt(image: string, prompt?: string, retries: number = 3): Promise<string> {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 1200000);
+
     let result: OllamaResponse<OllamaPromptResponse> = await (await fetch('http://localhost:11434/api/chat', {
         method: 'POST',
         headers: {
             'content-type': 'application/json'
         },
+        signal: controller.signal,
         body: JSON.stringify({
-            model: process.env.PROMPT_MODEL || 'unitythemaker/llama3.2-vision-tools',
+            model: process.env.PROMPT_MODEL || 'gemma3:12b',
             messages: [
                 {
                     role: 'system',
-                    content: "You are a website design interpreter for a development team. Your role is to analyze the design provided in the given image or described by the client and translate it into a structured JSON format for your team members. Follow these guidelines strictly: Only describe elements explicitly visible or stated in the image or user prompt. Do not infer or assume any details that are not present. Use precise and consistent terminology for design components (e.g., 'header', 'footer', 'button', 'text', 'image', etc.). Clearly specify properties for each element, such as dimensions, colors, fonts, text content, alignment, and positions, if provided. If a property is not mentioned or visible, exclude it from the JSON. Do not include any additional features, interpretations, or creative liberties beyond what is explicitly provided. Ensure that your response strictly adheres to the structure and includes only the details explicitly provided in the input. For most Websites, the layout of elements is a key part, so describe this part in the highest detail. Validate your output to ensure it conforms to proper JSON syntax. Always format your response as a valid JSON object.",
+                    content: "Your job is to describe the image in detail. Describe where elements are and how they are shaped. It will be used to describe a website. Only include the description of the image. Don't aknowledge this message in your text. Because the image shows one screen, the website should fill the entire screen like in the image. Specify this in your description when describing the elements. If you describe a grid, label the axis, for example 2x1 means two collumns and one row. Describe all elements in the image. Include the form of the elements. Start your text with 'Code a website that...",
                 },
                 {
                     role: 'user',
-                    content: prompt ?? "Here is my image.",
+                    content: prompt ?? "Here is my image. Describe it in detail.",
                     images: [
                         image
                     ]
                 }
             ],
             stream: false,
-            temperature: 0.5,
-            tools: [
-                {
-                    type: 'function',
-                    function: {
-                        name: 'give_description',
-                        description: 'Sends the description to the coding team so that they can code the website.',
-                        parameters: {
-                            type: 'object',
-                            properties: {
-                                description: {
-                                    type: 'string',
-                                    description: 'The description that should be sent. The longer the better.'
-                                }
-                            }
-                        },
-                        required: [
-                            'description'
-                        ]
-                    }
-                }
-            ]
+            temperature: 0.5
         }),
     })).json();
 
-    if(result == undefined || result.message.tool_calls == undefined || result.message.tool_calls.length <= 0) {
+    clearTimeout(timeout);
+
+    if(result == undefined || result.message == undefined || result.message.content == undefined) {
         if(retries <= 0) {
+            console.log(result);
+            console.log(result.message);
+            console.log(result.message.content);
             throw new Error('Failed to generate prompt from image');
         }
         console.log(chalk.yellow('Failed to generate prompt from image. Trying again...'));
         return generatePrompt(image, prompt, retries - 1);
     }
 
-    return result.message.tool_calls[0].function.arguments.description;
+    return result.message.content;
 }

@@ -34,10 +34,10 @@ export default defineEventHandler(async (event) => {
         .update(body.image + (body.prompt ?? ''))
         .digest('hex');
 
-    const cached = cache.get(cacheKey);
-    if(cached && Date.now() - cached.timestamp < CACHE_TTL) {
-        return { output: { prompt: cached.prompt, url: cached.url } } as GeneratedResponse;
-    }
+    // const cached = cache.get(cacheKey);
+    // if(cached && Date.now() - cached.timestamp < CACHE_TTL) {
+    //     return { output: { prompt: cached.prompt, url: cached.url } } as GeneratedResponse;
+    // }
 
     var response: GeneratedResponse = {};
     try {

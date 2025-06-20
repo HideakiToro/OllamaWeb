@@ -8,7 +8,8 @@ export async function generateWithImage(image: string, prompt?: string): Promise
 
     return $fetch('/api/generate', {
         method: 'post',
-        body: request
+        body: request,
+        timeout: 600000
     })
     .then(async (res) => {
         return res as GeneratedResponse;
