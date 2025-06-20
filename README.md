@@ -8,8 +8,8 @@ A tool to turn images into websites similar to Lovable, Bolt and Figma Make, jus
 ``` bash
 docker run -p 11434:11434 --name OllamaWebAI ollama/ollama:latest
 
-docker exec -it OllamaWebAI ollama pull qwen2.5-coder
-docker exec -it OllamaWebAI ollama pull unitythemaker/llama3.2-vision-tools
+docker exec -it OllamaWebAI ollama pull gemma3:12b
+docker exec -it OllamaWebAI ollama pull cogito:14b
 ```
 
 2. Start Interface
@@ -24,8 +24,8 @@ bun run dev
 You can override the default Ollama models using environment variables:
 
 ```bash
-export CODE_MODEL="qwen2.5-coder"
-export PROMPT_MODEL="unitythemaker/llama3.2-vision-tools"
+export CODE_MODEL="cogito:14b"
+export PROMPT_MODEL="gemma3:12b"
 ```
 
 Set these variables before starting the dev server to switch models without code changes.

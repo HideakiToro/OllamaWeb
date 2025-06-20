@@ -24,7 +24,7 @@ export async function generateCode(prompt: string, currentCode?: string, retries
             'content-type': 'application/json'
         },
         body: JSON.stringify({
-            model: process.env.CODE_MODEL || 'qwen2.5-coder',
+            model: process.env.CODE_MODEL || 'cogito:14b',
             messages,
             stream: false,
             temperature: 0.0,
@@ -54,8 +54,10 @@ export async function generateCode(prompt: string, currentCode?: string, retries
 
     if(result == undefined || result.message.tool_calls == undefined || result.message.tool_calls.length <= 0) {
         if(retries <= 0) {
+            console.log(prompt);
             throw new Error('Failed to generate code');
         }
+        console.log(JSON.stringify(result));
         console.log(chalk.yellow('Failed to generate code. Trying again...'));
         return generateCode(prompt, currentCode, retries - 1);
     }
