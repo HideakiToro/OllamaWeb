@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import { randomUUID, createHash } from 'node:crypto';
-import { ImagePromptBody } from "~/types/PromptBody";
+import { GenerateQuery, ImagePromptBody } from "~/types/PromptBody";
 import { GeneratedResponse } from "~/utils/GenerateCodeClient";
 import { generateCode } from "~/utils/GenerateCodeServer";
 import { generatePrompt } from "~/utils/GeneratePromptServer";
@@ -24,6 +24,8 @@ export default defineEventHandler(async (event) => {
         return;
     }
 
+    var query: GenerateQuery = await getQuery(event);
+
     var body: ImagePromptBody = await readBody(event);
     if(body == undefined) {
         setResponseStatus(event, 400);
@@ -34,10 +36,12 @@ export default defineEventHandler(async (event) => {
         .update(body.image + (body.prompt ?? ''))
         .digest('hex');
 
-    // const cached = cache.get(cacheKey);
-    // if(cached && Date.now() - cached.timestamp < CACHE_TTL) {
-    //     return { output: { prompt: cached.prompt, url: cached.url } } as GeneratedResponse;
-    // }
+    if (query.dontusecache === undefined || query.dontusecache !== "true") {
+        const cached = cache.get(cacheKey);
+        if(cached && Date.now() - cached.timestamp < CACHE_TTL) {
+            return { output: { prompt: cached.prompt, url: cached.url } } as GeneratedResponse;
+        }
+    }
 
     var response: GeneratedResponse = {};
     try {
